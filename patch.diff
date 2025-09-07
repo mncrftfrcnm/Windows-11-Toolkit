@@ -1,0 +1,304 @@
+*** taskbar.py	(prev)
+--- taskbar.py	(updated)
+@@
+-class DockButton(QtWidgets.QToolButton):
+-    def __init__(self, label: str, icon: QtGui.QIcon, app_path: str, base_size: int):
++class DockButton(QtWidgets.QToolButton):
++    """
++    A plain icon button. We keep it *effect-free* to avoid dangling
++    QGraphicsEffect crashes; all hover effects are managed by TaskbarWindow.
++    """
++    def __init__(self, label: str, icon: QtGui.QIcon, app_path: str, base_size: int):
+         super().__init__()
+         self.app_path = app_path
+         self.exec_key = exec_key_for_path(app_path)  # used to match running windows by exe basename
+         self.base = base_size
+         self.cur = base_size
+@@
+-        self.indicator = Indicator(self)
+-        self._hover_glow = None  # created on demand for "neon"
++        self.indicator = Indicator(self)
+@@
+-    def enterEvent(self, e):
+-        # neon glow on hover (for Neon effect)
+-        self._ensure_hover_glow()
+-        self.setGraphicsEffect(self._hover_glow)
+-        super().enterEvent(e)
+-
+-    def leaveEvent(self, e):
+-        self.setGraphicsEffect(None)
+-        super().leaveEvent(e)
++    # No per-button graphics effects; hover FX handled globally to prevent
++    # 'Internal C++ object ... already deleted' errors.
++    def enterEvent(self, e): super().enterEvent(e)
++    def leaveEvent(self, e): super().leaveEvent(e)
+@@
+ class SettingsDialog(QtWidgets.QDialog):
+@@
+-        # ---- Behavior
++        # ---- Behavior
+         be = QtWidgets.QWidget(); tabs.addTab(be, "Behavior")
+         f3 = QtWidgets.QFormLayout(be)
+         self.autohide = QtWidgets.QCheckBox(); self.autohide.setChecked(s.get("auto_hide",False))
+         self.magnify = QtWidgets.QCheckBox(); self.magnify.setChecked(s.get("magnify",True))
+         self.mag_power = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.mag_power.setRange(100,300); self.mag_power.setValue(int(s.get("magnify_factor",1.6)*100))
+         self.mag_sigma = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.mag_sigma.setRange(30,200); self.mag_sigma.setValue(int(s.get("magnify_sigma",70)))
+-        f3.addRow("Auto-hide", self.autohide)
+-        f3.addRow("Magnify", self.magnify)
+-        f3.addRow("Magnify power (%)", self.mag_power)
+-        f3.addRow("Magnify radius (px)", self.mag_sigma)
++        self.hover_fx = QtWidgets.QComboBox(); self.hover_fx.addItems(["none","focusfade","desaturate","outline","lift"])
++        self.fade_others = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.fade_others.setRange(10,100); self.fade_others.setValue(int(s.get("fade_others_to",0.4)*100))
++        self.icon_base_op = QtWidgets.QSlider(QtCore.Qt.Horizontal); self.icon_base_op.setRange(10,100); self.icon_base_op.setValue(int(s.get("icon_base_opacity",1.0)*100))
++        f3.addRow("Auto-hide", self.autohide)
++        f3.addRow("Magnify", self.magnify)
++        f3.addRow("Magnify power (%)", self.mag_power)
++        f3.addRow("Magnify radius (px)", self.mag_sigma)
++        f3.addRow("Hover effect", self.hover_fx)
++        f3.addRow("Fade others to (%)", self.fade_others)
++        f3.addRow("Icon base opacity (%)", self.icon_base_op)
+@@
+-        # ---- Effects
++        # ---- Effects
+         ef = QtWidgets.QWidget(); tabs.addTab(ef, "Effects")
+         f4 = QtWidgets.QFormLayout(ef)
+         self.outline = QtWidgets.QCheckBox(); self.outline.setChecked(s.get("outline",False))
+         self.glow = QtWidgets.QCheckBox(); self.glow.setChecked(s.get("glow",True))
+         self.shelf = QtWidgets.QCheckBox(); self.shelf.setChecked(s.get("shelf_highlight", False))
++        self.ripple = QtWidgets.QCheckBox(); self.ripple.setChecked(s.get("ripple_bg", False))
+         f4.addRow("Outline", self.outline)
+         f4.addRow("Glow shadow", self.glow)
+         f4.addRow("Dock shelf highlight", self.shelf)
++        f4.addRow("Ripple background", self.ripple)
+@@
+-        self.outline.toggled.connect(self._set_outline)
++        self.outline.toggled.connect(self._set_outline)
+         self.glow.toggled.connect(self._set_glow)
+         self.shelf.toggled.connect(self._set_shelf)
++        self.ripple.toggled.connect(self._set_ripple)
+@@
+-        self.outline.toggled.connect(self._set_outline)
++        # Behavior wires
+         self.glow.toggled.connect(self._set_glow)
+         self.shelf.toggled.connect(self._set_shelf)
++        self.hover_fx.currentTextChanged.connect(self._set_hover_fx)
++        self.fade_others.valueChanged.connect(self._set_fade_others)
++        self.icon_base_op.valueChanged.connect(self._set_icon_base)
+@@
+     def _toggle_autohide(self, b): self.win._toggle_autohide(b)
+     def _toggle_magnify(self, b): self.win._toggle_magnify(b)
+     def _set_mag_power(self, v): self.win._set_magnify_power(v/100.0)
+     def _set_mag_sigma(self, v): self.win._set_magnify_sigma(float(v))
+ 
+     def _set_outline(self, b): self.win._set_outline(b)
+     def _set_glow(self, b): self.win._set_glow(b)
+     def _set_shelf(self, b): self.win._set_shelf(b)
++    def _set_ripple(self, b): self.win._set_ripple(b)
++    def _set_hover_fx(self, name): self.win._set_hover_fx(name)
++    def _set_fade_others(self, v): self.win._set_fade_others(v/100.0)
++    def _set_icon_base(self, v): self.win._set_icon_base(v/100.0)
+@@
+ class TaskbarWindow(QtWidgets.QWidget, QtCore.QAbstractNativeEventFilter):
+@@
+-        # Magnify params / storage
++        # Magnify params / storage
+         self._buttons: List[DockButton] = []
+         self._magnify_enabled = self.current_style.get("magnify", True)
+         self._magnify_factor = self.current_style.get("magnify_factor", 1.6)
+         self._magnify_sigma = self.current_style.get("magnify_sigma", 70.0)
++        # Hover effects
++        self._hover_fx = self.current_style.get("hover_fx", "none")
++        self._fade_others_to = self.current_style.get("fade_others_to", 0.4)
++        self._icon_base_opacity = self.current_style.get("icon_base_opacity", 1.0)
++        # Ripple background
++        self._ripples = []  # list of (QPointF, radius, alpha)
++        self._ripple_enabled = self.current_style.get("ripple_bg", False)
++        self._ripple_timer = QtCore.QTimer(self); self._ripple_timer.timeout.connect(self._tick_ripples); self._ripple_timer.start(30)
+@@
+-        # Running-windows poller
++        # Running-windows poller
+         self._win_poll = QtCore.QTimer(self); self._win_poll.timeout.connect(self._refresh_running_windows); self._win_poll.start(1500)
+@@
+     def paintEvent(self, e: QtGui.QPaintEvent):
+         p = QtGui.QPainter(self); p.setRenderHint(QtGui.QPainter.Antialiasing)
+         rect = self.rect(); radius = self.current_style.get("radius",0)
+         path = QtGui.QPainterPath(); path.addRoundedRect(rect, radius, radius); p.setClipPath(path)
+@@
+         # macOS “shelf” highlight
+         if self.current_style.get("shelf_highlight", False) and self.current_style.get("position") == "bottom":
+             y = rect.top()+6
+             shelf = QtGui.QLinearGradient(rect.left(), y, rect.right(), y)
+             shelf.setColorAt(0.0, QtGui.QColor(255,255,255,30))
+             shelf.setColorAt(0.5, QtGui.QColor(255,255,255,70))
+             shelf.setColorAt(1.0, QtGui.QColor(255,255,255,30))
+             p.fillRect(rect.adjusted(16, 6, -16, rect.height()-y-rect.height()+7), QtGui.QBrush(shelf))
++        # Ripple overlay
++        if self._ripple_enabled and self._ripples:
++            for pos, r, a in self._ripples:
++                g = QtGui.QRadialGradient(pos, r)
++                g.setColorAt(0.0, QtGui.QColor(255,255,255,int(120*a)))
++                g.setColorAt(1.0, QtGui.QColor(255,255,255,0))
++                p.fillRect(rect, g)
+ 
+         super().paintEvent(e)
+@@
+     def mouseMoveEvent(self,e):
+         if QtCore.Qt.LeftButton and self._drag:
+             self.move(e.globalPosition().toPoint()-self._drag_pos); e.accept()
+         # Hover magnify (works because setMouseTracking(True))
+         if self._magnify_enabled and self._buttons:
+             self._update_magnify(e.globalPosition().toPoint())
++        # Hover effects (dim/desaturate/etc.)
++        if self._buttons and self._hover_fx != "none":
++            self._apply_hover_effects(e.globalPosition().toPoint())
++        else:
++            self._reset_hover_effects()
++        # Ripples
++        if self._ripple_enabled:
++            self._ripples.append((e.position().toPoint(), 6.0, 1.0))
++            if len(self._ripples) > 32:
++                self._ripples.pop(0)
++            self.update()
+@@
+     def leaveEvent(self,e):
+         self._hover=False
+         base = self.current_style["icon_size"]
+         for b in self._buttons: b.set_scaled(base)
++        self._reset_hover_effects()
+@@
+     def _update_magnify(self, cursor: QtCore.QPoint):
+         pos = self.current_style["position"]; vertical = pos in ("left","right")
+         sigma = self._magnify_sigma; base = self.current_style["icon_size"]; factor = self._magnify_factor
+         for btn in self._buttons:
+             center = btn.mapToGlobal(btn.rect().center())
+             dist = abs((cursor.y()-center.y()) if vertical else (cursor.x()-center.x()))
+             scale = 1.0 + (factor-1.0) * math.exp(-(dist*dist)/(2*sigma*sigma))
+             btn.set_scaled(int(base*scale))
++
++    # ---- Hover effects (global, safe) ---------------------------------------
++    def _nearest_button(self, cursor: QtCore.QPoint) -> Optional[DockButton]:
++        if not self._buttons: return None
++        pos = self.current_style["position"]; vertical = pos in ("left","right")
++        best, bestd = None, 1e9
++        for b in self._buttons:
++            c = b.mapToGlobal(b.rect().center())
++            d = abs((cursor.y()-c.y()) if vertical else (cursor.x()-c.x()))
++            if d < bestd: best, bestd = b, d
++        return best
++
++    def _apply_hover_effects(self, cursor: QtCore.QPoint):
++        focus = self._nearest_button(cursor)
++        if not focus:
++            self._reset_hover_effects(); return
++        fx = self._hover_fx
++        fade_to = self._fade_others_to
++        for b in self._buttons:
++            if fx in ("focusfade","desaturate"):
++                # Opacity effect for fade; remove from focused
++                eff = b.graphicsEffect()
++                if b is focus:
++                    if isinstance(eff, QtWidgets.QGraphicsOpacityEffect): b.setGraphicsEffect(None)
++                else:
++                    if not isinstance(eff, QtWidgets.QGraphicsOpacityEffect):
++                        eff = QtWidgets.QGraphicsOpacityEffect(b)
++                        b.setGraphicsEffect(eff)
++                    eff.setOpacity(fade_to)
++                # Optional "desaturate": tint gray (cheap approximation)
++                if fx == "desaturate" and b is not focus:
++                    # Colorize can look harsh; we keep fade primary.
++                    pass
++            elif fx == "outline":
++                # Draw an outline by setting stylesheet on focus only
++                if b is focus:
++                    b.setStyleSheet("QToolButton { border: 2px solid rgba(255,255,255,150); border-radius: 8px; padding: 2px; }")
++                else:
++                    b.setStyleSheet("")
++            elif fx == "lift":
++                # Apply small top margin on focus
++                if b is focus:
++                    b.setStyleSheet("QToolButton { margin-top: -4px; }")
++                else:
++                    b.setStyleSheet("QToolButton { margin-top: 0px; }")
++            else:
++                self._reset_hover_effects()
++
++    def _reset_hover_effects(self):
++        for b in self._buttons:
++            eff = b.graphicsEffect()
++            if isinstance(eff, QtWidgets.QGraphicsOpacityEffect):
++                b.setGraphicsEffect(None)
++            # reset any temp styles
++            b.setStyleSheet("")
++
++    def _tick_ripples(self):
++        if not self._ripple_enabled or not self._ripples: return
++        new = []
++        for pos, r, a in self._ripples:
++            r2 = r + 6.0
++            a2 = a * 0.92
++            if a2 > 0.05:
++                new.append((pos, r2, a2))
++        self._ripples = new
++        if new: self.update()
+@@
+     def apply_style(self, style_name: str):
+@@
+-        self._apply_effects()
++        self._hover_fx = self.current_style.get("hover_fx", self._hover_fx)
++        self._fade_others_to = self.current_style.get("fade_others_to", self._fade_others_to)
++        self._icon_base_opacity = self.current_style.get("icon_base_opacity", self._icon_base_opacity)
++        self._ripple_enabled = self.current_style.get("ripple_bg", self._ripple_enabled)
++        self._apply_effects()
+@@
+     def _set_outline(self, b:bool): self.current_style["outline"]=b; self.styles[self.current_style_name]=dict(self.current_style); self.update(); self._save_settings()
+     def _set_glow(self, b:bool): self.current_style["glow"]=b; self.container.setGraphicsEffect(self._make_shadow(b)); self._save_settings()
+     def _set_shelf(self, b:bool): self.current_style["shelf_highlight"]=b; self.styles[self.current_style_name]=dict(self.current_style); self.update(); self._save_settings()
++    def _set_ripple(self, b:bool): self.current_style["ripple_bg"]=b; self.styles[self.current_style_name]=dict(self.current_style); self._ripple_enabled=b; self._save_settings()
++    def _set_hover_fx(self, name:str): self.current_style["hover_fx"]=name; self.styles[self.current_style_name]=dict(self.current_style); self._hover_fx=name; self._save_settings()
++    def _set_fade_others(self, f:float): self.current_style["fade_others_to"]=f; self.styles[self.current_style_name]=dict(self.current_style); self._fade_others_to=f; self._save_settings()
++    def _set_icon_base(self, f:float): self.current_style["icon_base_opacity"]=f; self.styles[self.current_style_name]=dict(self.current_style); self._icon_base_opacity=f; self._save_settings()
+@@
+ DEFAULT_STYLES: Dict[str, Dict[str, Any]] = {
+@@
+     "Fluent (Mica)": {
+@@
+     },
++    "Ghost Icons": {
++        "position": "bottom", "alignment": "center",
++        "height": 56, "width": 56, "radius": 16,
++        "blur": "acrylic", "effect": "glass",
++        "color": [20, 20, 20, 220], "bg_image": None,
++        "auto_hide": False, "magnify": True, "magnify_factor": 1.6, "magnify_sigma": 70.0,
++        "icon_size": 32, "spacing": 10,
++        "outline": False, "glow": True, "shelf_highlight": False,
++        "hover_fx": "focusfade", "fade_others_to": 0.35, "icon_base_opacity": 0.6,
++        "ripple_bg": True
++    },
++    "Solid Opaque": {
++        "position": "bottom", "alignment": "left",
++        "height": 48, "width": 48, "radius": 8,
++        "blur": "none", "effect": "none",
++        "color": [30, 30, 30, 255], "bg_image": None,
++        "auto_hide": False, "magnify": False, "magnify_factor": 1.2, "magnify_sigma": 60.0,
++        "icon_size": 28, "spacing": 8,
++        "outline": True, "glow": False, "shelf_highlight": False,
++        "hover_fx": "outline", "fade_others_to": 0.6, "icon_base_opacity": 1.0,
++        "ripple_bg": False
++    },
+ }
+@@
+ BUILTIN_WIDGETS = {
+-    "ClockWidget": ClockWidget,
+-    "BatteryWidget": BatteryWidget,
+-    "MemoryWidget": MemoryWidget,
+-    "UptimeWidget": UptimeWidget,
+-    "CPUWidget": CPUWidget,
++    "ClockWidget": ClockWidget,
++    "BatteryWidget": BatteryWidget,
++    "MemoryWidget": MemoryWidget,
++    "UptimeWidget": UptimeWidget,
++    "CPUWidget": CPUWidget,
++    "NetworkWidget": None,   # placeholder; defined below
++    "StorageWidget": None,
++    "ClipboardWidget": None,
+ }
