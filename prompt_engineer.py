@@ -1,4 +1,4 @@
-# prompt_gui.py
+# prompt_engineer.py
 # Requires: PyQt6  (pip install PyQt6)
 # Python 3.9+
 

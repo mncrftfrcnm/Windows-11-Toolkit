@@ -1,9 +1,9 @@
-# overlay_studio_gui.py
+# retro_overlay.py
 # Windows 10/11 • Python 3.9+ • PyQt6
 # Click-through, always-on-top overlay with easy presets:
 # Filmic, CRT Retro, Sci-Fi HUD, Cyber Grid, Steampunk, Vaporwave, Matrix Rain (lite)
 #
-# Run: python overlay_studio_gui.py
+# Run: python retro_overlay.py
 #
 # Notes:
 # - One overlay window per monitor

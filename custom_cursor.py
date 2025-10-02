@@ -1,4 +1,4 @@
-# ai_cursor_designer_gui_v2.py
+# custom_cursor.py
 # Windows 10/11 • Python 3.10+ • PyQt6 + Pillow; optional SD-Turbo (DirectML) for textures
 # Key upgrades:
 #  - Reliable "Install & Apply (Current User)" using HKCU scheme + SPI_SETCURSORS with broadcast
@@ -6,7 +6,7 @@
 #  - Animated live preview
 #  - Randomize: color, path shape, tail len, frames, fps, seed
 #
-# Run: python ai_cursor_designer_gui_v2.py
+# Run: python custom_cursor.py
 
 import os, sys, math, struct, time, random
 from dataclasses import dataclass

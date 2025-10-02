@@ -6,7 +6,7 @@
 # pip install PyQt6 soundcard numpy
 # optional fallback: pip install sounddevice
 #
-# Run: python audio_reactive_all_windows.py
+# Run: python audio_reactor.py
 
 import sys, os, math, threading, time, ctypes
 import numpy as np

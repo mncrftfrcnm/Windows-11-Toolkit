@@ -1,5 +1,6 @@
-# ai_wallpaper_gui.py
+# ai_wallpaper_generator.py
 # PyQt6 GUI for local text->image wallpapers via DirectML (diffusers + torch-directml).
+# Run: python ai_wallpaper_generator.py
 # pip install PyQt6
 import os, sys, threading, subprocess, time
 from pathlib import Path
