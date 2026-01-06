@@ -7,6 +7,7 @@ import datetime
 import subprocess
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
+from PyQt6.QtGui import QTextCursor
 
 # ---------------- PyQt6 ----------------
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QDate, QTime, QSize
@@ -652,7 +653,9 @@ class MainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.scheduler.tick)
         self.timer.start(1000)  # 1s
-
+        self.log_box = QPlainTextEdit()
+        self.log_box.setReadOnly(True)
+        self.log_box.setMinimumHeight(140)
         # Top bar (save dir)
         topw = QWidget()
         top = QHBoxLayout(topw)
@@ -675,9 +678,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.tab_sched, "⏰ Schedules")
 
         # Log
-        self.log_box = QPlainTextEdit()
-        self.log_box.setReadOnly(True)
-        self.log_box.setMinimumHeight(140)
+
 
         # Layout
         central = QWidget()
@@ -718,7 +719,8 @@ class MainWindow(QMainWindow):
     # -------- Logging ----------
     def log(self, msg: str):
         self.log_box.appendPlainText(f"[{now_str()}] {msg}")
-        self.log_box.moveCursor(self.log_box.textCursor().End)
+        self.log_box.moveCursor(QTextCursor.MoveOperation.End)
+
 
     # -------- Scheduler hook ----------
     def _run_scheduled_job(self, job: ScheduledJob):
