@@ -1,16 +1,4 @@
-# -*- coding: utf-8 -*-
-# Polished Custom Taskbar (Windows + PySide6)
-# Key upgrades:
-#  - Dedicated Opacity slider (0–255) + live preview
-#  - True icon magnification (buttons resize with icons; no clipping)
-#  - Spacing slider affects icon gaps and container margins consistently
-#  - Badge position follows icon scaling
-#  - Safer RGBA handling, minor fixes and tidy-ups
-#  - Edge hotspot reveal for Auto-hide
-#  - Drag reordering via “Edit app order…”
-#  - Configurable click actions (per-app + bar background)
-#  - Uses icon from target .exe (resolving .lnk)
-#  - Right-click tiling (left/right/top/bottom)
+
 
 import sys, os, json, math, ctypes, atexit, platform, time
 from pathlib import Path
@@ -1432,3 +1420,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
