@@ -1,12 +1,3 @@
-# Audio-reactive overlay for ALL windows (Windows 10/11)
-# - PyQt6 overlay windows (one per monitor), click-through + always-on-top
-# - WASAPI loopback audio via 'soundcard' (fallback 'sounddevice')
-# - Pulses global ambient + draws outlines around visible top-level windows
-#
-# pip install PyQt6 soundcard numpy
-# optional fallback: pip install sounddevice
-#
-# Run: python audio_reactor.py
 
 import sys, os, math, threading, time, ctypes
 import numpy as np
@@ -14,9 +5,6 @@ from ctypes import wintypes
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt
 
-# ============================
-# Audio capture (loopback)
-# ============================
 
 class AudioWorker(QtCore.QThread):
     level = QtCore.pyqtSignal(float)  # smoothed 0..1 amplitude
@@ -374,3 +362,4 @@ if __name__ == "__main__":
     c = Controller(app)
     c.show()  # small controller window; overlays are separate
     sys.exit(app.exec())
+
