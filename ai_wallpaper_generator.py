@@ -1,13 +1,9 @@
-# ai_wallpaper_generator.py
-# PyQt6 GUI for local text->image wallpapers via DirectML (diffusers + torch-directml).
-# Run: python ai_wallpaper_generator.py
-# pip install PyQt6
+
 import os, sys, threading, subprocess, time
 from pathlib import Path
 from dataclasses import dataclass
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-# lazy imports inside worker so the app opens even before deps are installed
 DML_OK = None
 
 @dataclass
@@ -201,3 +197,4 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
     w = WallpaperApp(); w.show()
     sys.exit(app.exec())
+
