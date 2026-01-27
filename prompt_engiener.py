@@ -1,6 +1,3 @@
-# prompt_gui.py
-# Requires: PyQt6  (pip install PyQt6)
-# Python 3.9+
 
 from __future__ import annotations
 import json
@@ -16,9 +13,6 @@ from PyQt6.QtWidgets import (
     QComboBox
 )
 
-# ------------------------------------------------------------
-# Original helpers (kept verbatim to preserve behavior/wording)
-# ------------------------------------------------------------
 
 def add_thinking(string=''):
     return string + 'Show all your steps and your thinking process'
@@ -47,10 +41,6 @@ def do_not_lie(string=''):
 def trasparency(string=''):
     return string + 'Clearly state any limitations or areas of uncertainty'
 
-
-# ------------------------------------------------------------
-# Previously added helpers (appenders & prependers)
-# ------------------------------------------------------------
 
 def format_json(string=''):
     return string + 'Format the final answer as a JSON object with clear keys and no extra prose.'
@@ -98,11 +88,7 @@ def technical_writer_persona(string=''):
     return 'You are a meticulous technical writer who communicates clearly and concisely. ' + string
 
 
-# ------------------------------------------------------------
-# NEW: extra roles + new categories (more options)
-# ------------------------------------------------------------
 
-# Roles / personas (prepend)
 def socratic_tutor(string=''):
     return 'You are a Socratic tutor who guides with questions and short hints. ' + string
 
@@ -206,7 +192,6 @@ def mece_structure(string=''):
     return string + 'Organize points using a MECE structure (mutually exclusive, collectively exhaustive).'
 
 
-# Safety & QA (append)
 def bias_check(string=''):
     return string + 'Identify potential biases or blind spots and note how you mitigated them.'
 
@@ -237,9 +222,6 @@ def data_schema(string=''):
     return string + 'If data is involved, include a minimal schema and field descriptions.'
 
 
-# ------------------------------------------------------------
-# Option registries (key, label, func, tooltip)
-# ------------------------------------------------------------
 
 ROLES = [
     ("role_expert", "Expert role", expertize, "Prepend: 'you are an expert in the question that will be asked.'"),
@@ -328,9 +310,6 @@ CODE_DATA = [
 ]
 
 
-# ------------------------------------------------------------
-# Utilities: persistence of popularity & recents
-# ------------------------------------------------------------
 
 STATE_PATH = os.path.join(str(Path.home()), ".prompt_builder_state.json")
 DEFAULT_STATE = {"popular": {}, "recent": [], "favorites": []}  # recent is list of lists of keys
@@ -350,10 +329,6 @@ def save_state(state):
         pass
 
 
-# ------------------------------------------------------------
-# Main window
-# ------------------------------------------------------------
-
 class PromptBuilder(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -361,16 +336,13 @@ class PromptBuilder(QMainWindow):
         self.setMinimumSize(1200, 760)
         self.setWindowIcon(QIcon())
 
-        # Registry: key -> (checkbox, func, label)
         self.key_to_checkbox = {}
         self.key_to_func = {}
         self.key_to_label = {}
         self.key_to_chips = {}  # key -> list[QPushButton] mirrors for chip buttons
 
-        # Load persisted state
         self.state = load_state()
 
-        # Central layout
         root = QHBoxLayout()
         host = QWidget()
         host.setLayout(root)
@@ -843,3 +815,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
