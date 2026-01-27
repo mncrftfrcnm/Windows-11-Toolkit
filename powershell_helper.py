@@ -11,10 +11,7 @@ class PowerShellAgent:
         self.device = device
 
     def generate_powershell(self, user_request: str, max_length: int = 200) -> str:
-        """
-        Generate a PowerShell script snippet based on the user request using model.generate(),
-        avoiding the pipeline to prevent extra sklearn/numpy imports.
-        """
+
         prompt = (
             "# Convert the following user request into a PowerShell script\n"
             f"# User request: {user_request}\n"
@@ -82,3 +79,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
