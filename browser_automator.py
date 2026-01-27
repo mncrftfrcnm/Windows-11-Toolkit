@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from PyQt6.QtGui import QTextCursor
 
-# ---------------- PyQt6 ----------------
 from PyQt6.QtCore import Qt, QTimer, QThread, pyqtSignal, QDate, QTime, QSize
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -18,14 +17,13 @@ from PyQt6.QtWidgets import (
     QDoubleSpinBox, QPlainTextEdit, QScrollArea
 )
 
-# ---------------- Globals & Paths ----------------
+
 APP_TITLE = "Playwright Assistant — Recorder • Scripts • Visual Flows • Schedules (PyQt6)"
 default_dir = os.path.join(os.getcwd(), "recordings")
 flows_dir = os.path.join(os.getcwd(), "flows")
 for d in (default_dir, flows_dir):
     os.makedirs(d, exist_ok=True)
 
-# --------------- Helpers -----------------
 def inject_headless_flag(code: str) -> str:
     code = re.sub(r"headless\s*=\s*[^,\)]+,?\s*", "", code)
     code = re.sub(r"(launch\()", r"\1headless=HEADLESS, ", code)
@@ -767,4 +765,5 @@ def main():
     sys.exit(app.exec())
 
 if __name__ == "__main__":
+
     main()
